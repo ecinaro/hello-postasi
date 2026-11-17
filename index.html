@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Hello Postası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen airmail desk. Header, scrolling correspondence log, composer pinned at the bottom. Replies arrive as airmail postcards. */
+:root {
+  --paper: #f2f4f9;
+  --card: #ffffff;
+  --ink: #17203b;
+  --muted: #5a6483;
+  --line: #d8ddea;
+  --red: #cf3a2c;
+  --blue: #1f4fae;
+  --on-accent: #ffffff;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11141c; --card: #1a1f2b; --ink: #e7ebf4; --muted: #9aa3bd; --line: #2c3344;
+    --red: #ff6a5c; --blue: #7a9cff; --on-accent: #11141c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11141c; --card: #1a1f2b; --ink: #e7ebf4; --muted: #9aa3bd; --line: #2c3344;
+  --red: #ff6a5c; --blue: #7a9cff; --on-accent: #11141c; color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+* { box-sizing: border-box; }
+
+.app {
+  height: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Header */
+.top {
+  padding-block: 20px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.label .sep { color: var(--blue); }
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.tagline { margin: 4px 0 0; color: var(--muted); max-width: 46ch; }
+
+.counter { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+.counter-text {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.counter-text b { color: var(--ink); font-weight: 500; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--blue); transition: width 0.4s ease; }
+
+/* Correspondence log */
+#log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-block: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.you { align-self: flex-end; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 80%; }
+.bubble {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 9px 14px;
+  border-radius: 16px 16px 4px 16px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.meta { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* Airmail postcard: striped red/blue edge around the reply */
+.postcard {
+  align-self: stretch;
+  padding: 6px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(-45deg,
+    var(--red) 0 12px, var(--card) 12px 18px,
+    var(--blue) 18px 30px, var(--card) 30px 36px);
+}
+.postcard-inner {
+  background: var(--card);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.note { margin: 0; color: var(--muted); }
+.note strong { color: var(--ink); font-weight: 600; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 10px;
+}
+.greet {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.native {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.55rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.translit { color: var(--muted); font-style: italic; font-size: 13px; min-height: 1.2em; }
+.lang-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lang { font-size: 13px; font-weight: 500; min-width: 0; }
+.code {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+}
+.speak {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.speak:hover { color: var(--blue); border-color: var(--blue); }
+.speak svg { width: 14px; height: 14px; }
+
+.plain {
+  align-self: flex-start;
+  max-width: 85%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 14px;
+}
+
+/* Composer */
+.composer {
+  padding-block: 12px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.row { display: flex; gap: 8px; }
+#msg {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+#msg::placeholder { color: var(--muted); }
+#send {
+  font: inherit;
+  font-weight: 600;
+  background: var(--red);
+  color: var(--on-accent);
+  border: 0;
+  border-radius: 10px;
+  padding: 0 18px;
+  cursor: pointer;
+}
+#send:hover { filter: brightness(1.06); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chips-label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+.chip {
+  font: inherit;
+  font-size: 13px;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--blue); color: var(--blue); }
+
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.arrive { animation: arrive 0.35s ease both; }
+@keyframes arrive { from { opacity: 0.35; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .arrive { animation: none; }
+  .bar span { transition: none; }
+}
+@media (max-width: 480px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .native { font-size: 1.3rem; }
+  .you { max-width: 90%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="label">Par avion <span class="sep">/</span> Uçak ile</span>
+      <h1>Hello Postası</h1>
+      <p class="tagline">Bir “hello” yaz, dünyanın dört bir yanından cevap gelsin.</p>
+    </div>
+    <div class="counter" aria-label="Keşfedilen diller">
+      <span class="counter-text"><b id="seen-count">0</b> / <span id="total-count">0</span> dil keşfedildi</span>
+      <div class="bar"><span id="bar"></span></div>
+    </div>
+  </header>
+
+  <main id="log" aria-live="polite"></main>
+
+  <form class="composer" id="form" autocomplete="off">
+    <div class="row">
+      <label for="msg" class="sr-only" hidden>Mesaj</label>
+      <input id="msg" name="msg" type="text" placeholder="hello yaz…" aria-label="Mesaj" maxlength="80">
+      <button id="send" type="submit">Gönder</button>
+    </div>
+    <div class="chips">
+      <span class="chips-label">Dene:</span>
+      <button type="button" class="chip" data-say="hello">hello</button>
+      <button type="button" class="chip" data-say="merhaba">merhaba</button>
+      <button type="button" class="chip" data-say="hola">hola</button>
+      <button type="button" class="chip" data-say="konnichiwa">konnichiwa</button>
+      <button type="button" class="chip" data-say="nasılsın">nasılsın</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const LANGS = [
+  { code: "en", name: "İngilizce", text: "Hello" },
+  { code: "tr", name: "Türkçe", text: "Merhaba" },
+  { code: "es", name: "İspanyolca", text: "Hola" },
+  { code: "fr", name: "Fransızca", text: "Bonjour" },
+  { code: "de", name: "Almanca", text: "Hallo" },
+  { code: "it", name: "İtalyanca", text: "Ciao" },
+  { code: "pt", name: "Portekizce", text: "Olá" },
+  { code: "nl", name: "Felemenkçe", text: "Hoi" },
+  { code: "sv", name: "İsveççe", text: "Hej" },
+  { code: "fi", name: "Fince", text: "Moi" },
+  { code: "is", name: "İzlandaca", text: "Halló" },
+  { code: "pl", name: "Lehçe", text: "Cześć" },
+  { code: "cs", name: "Çekçe", text: "Ahoj" },
+  { code: "ro", name: "Rumence", text: "Salut" },
+  { code: "hu", name: "Macarca", text: "Szia" },
+  { code: "el", name: "Yunanca", text: "Γειά σου", tr: "Yiá sou" },
+  { code: "ru", name: "Rusça", text: "Привет", tr: "Privet" },
+  { code: "uk", name: "Ukraynaca", text: "Привіт", tr: "Pryvit" },
+  { code: "bg", name: "Bulgarca", text: "Здравей", tr: "Zdravey" },
+  { code: "sr", name: "Sırpça", text: "Здраво", tr: "Zdravo" },
+  { code: "ar", name: "Arapça", text: "مرحبا", tr: "Marhaban", rtl: true },
+  { code: "he", name: "İbranice", text: "שלום", tr: "Shalom", rtl: true },
+  { code: "fa", name: "Farsça", text: "سلام", tr: "Salâm", rtl: true },
+  { code: "ur", name: "Urduca", text: "آداب", tr: "Âdâb", rtl: true },
+  { code: "hi", name: "Hintçe", text: "नमस्ते", tr: "Namaste" },
+  { code: "bn", name: "Bengalce", text: "নমস্কার", tr: "Nomoshkar" },
+  { code: "ta", name: "Tamilce", text: "வணக்கம்", tr: "Vanakkam" },
+  { code: "th", name: "Tayca", text: "สวัสดี", tr: "Sawasdee" },
+  { code: "vi", name: "Vietnamca", text: "Xin chào" },
+  { code: "id", name: "Endonezce", text: "Halo" },
+  { code: "tl", name: "Tagalogca", text: "Kumusta" },
+  { code: "zh", name: "Çince", text: "你好", tr: "Nǐ hǎo" },
+  { code: "ja", name: "Japonca", text: "こんにちは", tr: "Konnichiwa" },
+  { code: "ko", name: "Korece", text: "안녕하세요", tr: "Annyeonghaseyo" },
+  { code: "mn", name: "Moğolca", text: "Сайн уу", tr: "Sain uu" },
+  { code: "kk", name: "Kazakça", text: "Сәлем", tr: "Sälem" },
+  { code: "az", name: "Azerbaycanca", text: "Salam" },
+  { code: "ka", name: "Gürcüce", text: "გამარჯობა", tr: "Gamarjoba" },
+  { code: "hy", name: "Ermenice", text: "Բարեւ", tr: "Barev" },
+  { code: "ku", name: "Kürtçe", text: "Silav" },
+  { code: "sw", name: "Svahili", text: "Jambo" },
+  { code: "zu", name: "Zuluca", text: "Sawubona" },
+  { code: "am", name: "Amharca", text: "ሰላም", tr: "Selam" },
+  { code: "haw", name: "Hawaii dili", text: "Aloha" },
+  { code: "mi", name: "Maorice", text: "Kia ora" },
+  { code: "ga", name: "İrlandaca", text: "Dia duit" },
+  { code: "cy", name: "Galce", text: "Shwmae" },
+  { code: "eo", name: "Esperanto", text: "Saluton" },
+  { code: "la", name: "Latince", text: "Salve" }
+];
+const PER_REPLY = 6;
+const STORE_KEY = "hello-postasi-seen";
+
+const $ = (id) => document.getElementById(id);
+const log = $("log");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const canSpeak = "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+
+/* Turn any input into a plain comparable form: lowercase, no accents, no punctuation */
+function norm(s) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLocaleLowerCase("tr").replace(/ı/g, "i")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+}
+
+/* Every greeting (native text and transliteration) points back to its language */
+const GREETING_MAP = new Map();
+for (const l of LANGS) {
+  GREETING_MAP.set(norm(l.text), l);
+  if (l.tr) GREETING_MAP.set(norm(l.tr), l);
+}
+const EXTRA = new Map([
+  ["hi", "en"], ["hey", "en"], ["helo", "en"], ["hellow", "en"],
+  ["mrb", "tr"], ["selam", "tr"], ["slm", "tr"], ["selamlar", "tr"], ["merhabalar", "tr"], ["meraba", "tr"],
+  ["bonjur", "fr"], ["privet", "ru"], ["namaste", "hi"], ["ni hao", "zh"], ["konichiwa", "ja"], ["annyeong", "ko"]
+]);
+
+/* Returns the language the user greeted in, or null when it is not a greeting */
+function detectGreeting(input) {
+  const n = norm(input);
+  if (!n) return null;
+  const byCode = (c) => LANGS.find((l) => l.code === c);
+  if (/^h+e+l+o+w*$/.test(n.replace(/ /g, ""))) return byCode("en");
+  if (EXTRA.has(n)) return byCode(EXTRA.get(n));
+  if (GREETING_MAP.has(n)) return GREETING_MAP.get(n);
+  for (const w of n.split(" ")) {
+    if (/^h+e+l+o+w*$/.test(w)) return byCode("en");
+    if (EXTRA.has(w)) return byCode(EXTRA.get(w));
+    if (GREETING_MAP.has(w)) return GREETING_MAP.get(w);
+  }
+  return null;
+}
+
+/* Discovery progress, remembered per browser when storage is available */
+let seen = new Set();
+try {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) seen = new Set(JSON.parse(raw).filter((c) => LANGS.some((l) => l.code === c)));
+} catch (e) { /* storage unavailable: start fresh */ }
+
+function saveSeen() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify([...seen])); } catch (e) {}
+}
+function updateCounter() {
+  $("seen-count").textContent = seen.size;
+  $("total-count").textContent = LANGS.length;
+  $("bar").style.width = (seen.size / LANGS.length * 100).toFixed(1) + "%";
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Prefer languages the user has not met yet; reset once all are discovered */
+function pickLanguages(exclude) {
+  let completed = false;
+  let fresh = shuffle(LANGS.filter((l) => !seen.has(l.code) && l !== exclude));
+  if (fresh.length === 0) {
+    seen.clear();
+    completed = true;
+    fresh = shuffle(LANGS.filter((l) => l !== exclude));
+  }
+  let picked = fresh.slice(0, PER_REPLY);
+  if (picked.length < PER_REPLY) {
+    const filler = shuffle(LANGS.filter((l) => l !== exclude && !picked.includes(l)));
+    picked = picked.concat(filler.slice(0, PER_REPLY - picked.length));
+  }
+  return { picked, completed };
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+const SPEAKER_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6h2.5l3.5-3v10L5 10H2.5z" fill="currentColor"/><path d="M11 5.5a3.5 3.5 0 0 1 0 5"/><path d="M12.8 3.5a6 6 0 0 1 0 9"/></svg>';
+
+function speak(l) {
+  if (!canSpeak) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(l.text);
+    u.lang = l.code;
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* speech not available in this viewer */ }
+}
+
+function greetingCard(l) {
+  const card = el("div", "greet");
+  const native = el("div", "native", l.text);
+  native.lang = l.code;
+  if (l.rtl) native.dir = "rtl";
+  card.append(native, el("div", "translit", l.tr || ""));
+  const row = el("div", "lang-row");
+  const lang = el("span", "lang", l.name);
+  lang.append(el("span", "code", l.code));
+  row.append(lang);
+  if (canSpeak) {
+    const b = el("button", "speak");
+    b.type = "button";
+    b.innerHTML = SPEAKER_SVG;
+    b.setAttribute("aria-label", l.name + " sesli dinle");
+    b.title = "Sesli dinle";
+    b.addEventListener("click", () => speak(l));
+    row.append(b);
+  }
+  card.append(row);
+  return card;
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function addUser(text, tag) {
+  const wrap = el("div", "you arrive");
+  wrap.append(el("div", "bubble", text));
+  wrap.append(el("span", "meta", (tag ? tag + " · " : "") + timeNow()));
+  log.append(wrap);
+}
+
+function addReply(detected) {
+  const { picked, completed } = pickLanguages(detected);
+  picked.forEach((l) => seen.add(l.code));
+  if (detected) seen.add(detected.code);
+  saveSeen();
+  updateCounter();
+
+  const card = el("section", "postcard arrive");
+  const inner = el("div", "postcard-inner");
+  const note = el("p", "note");
+  if (completed) {
+    note.append("Tebrikler, ", el("strong", null, LANGS.length + " dilin hepsini"), " gördün. Sayaç sıfırlandı, tur baştan başlıyor.");
+  } else if (detected && detected.code !== "en") {
+    note.append("Sen ", el("strong", null, detected.name), " selam verdin. İşte ", el("strong", null, PER_REPLY + " dilden"), " cevap:");
+  } else {
+    note.append("Hello'na ", el("strong", null, PER_REPLY + " dilden"), " cevap geldi:");
+  }
+  const grid = el("div", "grid");
+  picked.forEach((l) => grid.append(greetingCard(l)));
+  inner.append(note, grid);
+  card.append(inner);
+  log.append(card);
+}
+
+function addPlain(text) {
+  log.append(el("div", "plain arrive", text));
+}
+
+function scrollDown() {
+  log.scrollTo({ top: log.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" });
+}
+
+function handle(text, tag) {
+  const t = text.trim();
+  if (!t) return;
+  addUser(t, tag);
+  const detected = detectGreeting(t);
+  if (detected) addReply(detected);
+  else addPlain("Ben sadece selamlaşmayı anlıyorum. Bir “hello” yaz ya da kendi dilinde selam ver, sana dünyanın dört bir yanından cevap geleyim.");
+  scrollDown();
+}
+
+$("form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = $("msg");
+  handle(input.value);
+  input.value = "";
+  input.focus();
+});
+document.querySelectorAll(".chip").forEach((c) =>
+  c.addEventListener("click", () => handle(c.dataset.say))
+);
+
+/* Open in a working state: one example exchange */
+updateCounter();
+handle("hello", "Örnek");
+</script>
+</body>
+</html>
